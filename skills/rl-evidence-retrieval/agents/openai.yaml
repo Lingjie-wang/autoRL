@@ -1,0 +1,4 @@
+interface:
+  display_name: "RL Evidence Retrieval"
+  short_description: "Find RL papers and reusable code evidence"
+  default_prompt: "Use $rl-evidence-retrieval to turn my AutoRL task card into an evidence report with paper and codebase candidates."

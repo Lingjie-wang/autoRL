@@ -1,0 +1,4 @@
+interface:
+  display_name: "RL Task Clarifier"
+  short_description: "Clarify RL tasks until ambiguity is low"
+  default_prompt: "Use $rl-task-clarifier to clarify my RL task into an execution-ready task card."

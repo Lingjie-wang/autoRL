@@ -1,0 +1,42 @@
+# Local agent/session state
+.agents/
+.codex/
+
+# Runtime outputs
+runs/
+outputs/
+logs/
+wandb/
+checkpoints/
+artifacts/
+
+# Model/data artifacts
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.pickle
+*.npy
+*.npz
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+.env
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoRL Mini Orchestrator"
+  short_description: "Test AutoRL handoff to retrieval subagent"
+  default_prompt: "Use $autorl-mini-orchestrator to clarify my RL task in the main thread, then run evidence retrieval in a child agent."

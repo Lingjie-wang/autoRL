@@ -1,0 +1,4 @@
+interface:
+  display_name: "RL Framework Implementer"
+  short_description: "Install frameworks and implement RL algorithms"
+  default_prompt: "Use $rl-framework-implementer to set up the right RL framework and implement the algorithm for my clarified AutoRL task."

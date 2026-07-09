@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoRL Workflow"
+  short_description: "Skill workflow for AutoRL planning"
+  default_prompt: "Use $autorl to plan an evidence-backed RL workflow with Codex or Claude Code as the executor."
