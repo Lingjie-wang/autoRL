@@ -13,12 +13,28 @@ This skill owns environment wiring only. It must not choose algorithms, write tr
 
 ## Inputs
 
-Minimum viable inputs:
+Two accepted input forms:
+
+**Form A — task card** (full AutoRL pipeline):
 
 - a task card with a ready `environment_spec` (env id/path, source type, concrete RL task)
 - clear `execution_boundary`
 - clear dependency policy
-- target run directory `runs/<task-id>/`
+
+**Form B — direct request** (description + environment code):
+
+- the environment source code (file(s) or a path)
+- a natural-language description covering the semantic checklist in
+  [description-checklist.md](references/description-checklist.md) — the items
+  code alone cannot reveal (observation/action semantics, reward meaning,
+  termination rules, randomness sources)
+
+For Form B, read the code first and derive everything derivable from it; use
+the description only for semantics. If the description and the code disagree,
+trust the code and record the discrepancy in the integration report. If a
+blocking checklist item is missing from both, ask — do not guess.
+
+Both forms need a target run directory `runs/<task-id>/`.
 
 Stop if the environment id/path is ambiguous, the source type is unknown, or dependency permissions are unclear. Route back to `skills/rl-task-clarifier/` instead of guessing.
 
