@@ -114,6 +114,8 @@ Use [executor-protocol.md](executor-protocol.md) for the brief format.
 
 Executor: Codex or Claude Code.
 
+Use `skills/rl-env-integrator/` first when the task card names a concrete environment that must become constructible behind the adapter contract (`references/env-adapter-contract.md`). It emits `integration_report.md` plus `artifacts/integration/` deliverables, which `skills/rl-env-verifier/` gates in Stage 6 before training-oriented implementation relies on the environment.
+
 Use `skills/rl-framework-implementer/` when implementation requires selecting or installing an RL framework, cloning a reference implementation, adding algorithm/environment wiring, or running bounded smoke tests.
 
 Primary artifacts:
@@ -153,6 +155,8 @@ If dependency installation, cloning, simulator assets, or long training are requ
 ## Stage 6: Verification
 
 Output: `verification_report`.
+
+Use `skills/rl-env-verifier/` when Stage 5 produced an environment integration: it independently re-checks every `env_spec.json` claim against runtime behavior and emits `verification_report.json` with per-check expected/observed/smallest_fix records.
 
 Check:
 

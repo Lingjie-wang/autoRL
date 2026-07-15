@@ -19,6 +19,7 @@ run-or-task/
   implementation_plan.md
   dependency_plan.md
   smoke_test_report.md
+  integration_report.md       # when an environment was integrated; see references/env-adapter-contract.md
   install_log.md              # optional when installs/clones happen
   run_config.json             # optional implementation config
   verification_report.json

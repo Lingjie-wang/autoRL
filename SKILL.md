@@ -32,8 +32,9 @@ Treat Codex or Claude Code as the executor. Do not recreate an executor inside t
    - mini workflow testing: use `skills/autorl-mini-orchestrator/` when explicitly testing main-thread clarification followed by retrieval subagent handoff
    - strategy decision
    - executor brief
+   - environment integration: use `skills/rl-env-integrator/` when a concrete environment must become constructible behind the adapter contract (`references/env-adapter-contract.md`) before algorithm work
    - implementation: use `skills/rl-framework-implementer/` when the task requires setting up an RL framework, adding algorithm/environment code, or running bounded implementation smoke tests
-   - verification
+   - verification: use `skills/rl-env-verifier/` to independently verify environment integrations and emit `verification_report.json`
    - result package
 
 4. Keep context bounded:
@@ -59,3 +60,6 @@ Read only the files needed for the current task:
 - [skills/rl-evidence-retrieval/SKILL.md](skills/rl-evidence-retrieval/SKILL.md): RL paper/codebase retrieval and evidence report generation.
 - [skills/autorl-mini-orchestrator/SKILL.md](skills/autorl-mini-orchestrator/SKILL.md): orchestration test for main-thread clarification followed by retrieval subagent handoff.
 - [skills/rl-framework-implementer/SKILL.md](skills/rl-framework-implementer/SKILL.md): RL framework setup, algorithm implementation, dependency gating, and smoke tests.
+- [references/env-adapter-contract.md](references/env-adapter-contract.md): what "an environment is integrated" means — adapter standard, deliverables, verification tiers.
+- [skills/rl-env-integrator/SKILL.md](skills/rl-env-integrator/SKILL.md): integrate one environment behind the adapter contract and produce verifiable deliverables.
+- [skills/rl-env-verifier/SKILL.md](skills/rl-env-verifier/SKILL.md): independent acceptance gate for environment integrations; emits verification_report.json.
