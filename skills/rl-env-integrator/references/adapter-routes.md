@@ -28,4 +28,35 @@ Environment behind a process or network boundary (StarCraft II for SMAC, robotic
 
 ## Multi-Agent Environments
 
-Follow PettingZoo `ParallelEnv` (simultaneous actions) or `AECEnv` (turn-based) instead of single-agent Gymnasium. Record `api_convention` in `env_spec.json`. Per-agent spaces and action masks (e.g. SMAC availability masks) go into the spec's notes until the contract grows dedicated fields.
+Follow PettingZoo `ParallelEnv` (simultaneous actions) or `AECEnv` (turn-based) instead of single-agent Gymnasium. Record `api_convention` in `env_spec.json`. See the "Multi-Agent Environments (PettingZoo)" section of `references/env-adapter-contract.md` for the required surface, the extra `env_spec.json` fields (`possible_agents`, per-agent `observation_spaces`/`action_spaces`, `action_mask_location`, `agents_can_terminate_early`), and the multi-agent verification tier.
+
+ParallelEnv adapter rules that differ from single-agent:
+
+- `reset`/`step` speak dicts keyed by the CURRENTLY-ACTIVE agents, not lists or single values.
+- Maintain `agents` (active) vs `possible_agents` (all). Drop an agent the step after its done flag is True; never re-add before `reset`. Restore the full set in `reset`.
+- Split each agent's combined native `done` into per-agent `terminated` (task outcome) vs `truncated` (step/turn limit).
+- Surface action masks at one declared location (`info[agent]["action_mask"]` is the default here) and record it in the spec.
+- Verify with `skills/rl-env-verifier/references/verify_parallel_env_template.py`.
+
+Worked example: `runs/20260715-coin-arena-integration/` — a legacy `setup/advance` dict env with dying agents and per-agent masks, wrapped without importing pettingzoo. If official conformance is required, gate a pettingzoo install and add `pettingzoo.test.parallel_api_test` as a runtime check.
+
+## EPyMARL Family (PyMARL / EPyMARL, QMIX lineage)
+
+When the target trainer is EPyMARL, the environment must end up as a pull-style `MultiAgentEnv` (`api_convention: "epymarl_multiagentenv"`). See the contract's "EPyMARL MultiAgentEnv Convention" section for the required surface and the extra spec fields.
+
+Pick the channel by what the environment natively provides:
+
+- **Direct wrapper** — the environment already speaks the dialect (SMAC, SMACv2, SMAClite). Thin shim; native masks and native centralized state survive. **Required** for any environment whose action legality matters.
+- **`gymma`** — generic Gym-style multi-agent environments. Masks are dropped; `get_state()` becomes concatenated observations.
+- **`pz_wrapper` → `gymma`** — PettingZoo sources (MPE). Same losses.
+- **`vmas_wrapper` → `gymma`** — VMAS. Same losses.
+
+Rules for this route:
+
+- Reproduce the **real** channel, including its losses; do not build a better-than-real path, or the spec misrepresents what training receives.
+- Detect `global_state.source` and `action_mask.source` from the live environment (compare `get_state()` against concatenated observations; check whether any action is actually masked out). Never assert them by hand.
+- Set `SC2PATH` and any asset paths from `env_config.json`, not shell state.
+- Import `smac` / `smacv2` lazily and never together (PySC2 `DuplicateMapError`).
+- Normalize `step()` to the EPyMARL 5-tuple; upstream SMAC returns 3.
+
+Worked examples: `runs/20260726-marl5-{smacv1,smacv2,mpe,vmas}/`. Overview of all verified environments with shapes, channels, and launch commands: `references/marl-environment-catalog.md`.

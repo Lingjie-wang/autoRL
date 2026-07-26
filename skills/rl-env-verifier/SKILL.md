@@ -38,11 +38,31 @@ Match checks to `execution_boundary`:
 
 ### 2. Run The Check Catalog
 
-Read [check-catalog.md](references/check-catalog.md) for the full catalog, what accident each check catches, and multi-agent/external-simulator extensions. Execute via [verify_env_template.py](references/verify_env_template.py):
+Read [check-catalog.md](references/check-catalog.md) for the full catalog, what accident each check catches, and multi-agent/external-simulator extensions.
 
-```bash
-python verify_env_template.py --run-dir runs/<task-id> --boundary dry_run
-```
+Dispatch on `env_spec.json`'s `api_convention`:
+
+- `gymnasium` (single-agent) → [verify_env_template.py](references/verify_env_template.py)
+
+  ```bash
+  python verify_env_template.py --run-dir runs/<task-id> --boundary dry_run
+  ```
+
+- `pettingzoo_parallel` (multi-agent, simultaneous) → [verify_parallel_env_template.py](references/verify_parallel_env_template.py)
+
+  ```bash
+  python verify_parallel_env_template.py --run-dir runs/<task-id> --boundary dry_run
+  ```
+
+- `epymarl_multiagentenv` (pull-style MultiAgentEnv: SMAC, SMACv2, or anything routed through EPyMARL's gymma) → [verify_epymarl_env_template.py](references/verify_epymarl_env_template.py)
+
+  ```bash
+  python verify_epymarl_env_template.py --run-dir runs/<task-id> --boundary dry_run
+  ```
+
+The epymarl verifier adds two check families the other two cannot have: **env_info self-consistency** (`get_env_info()` is the trainer's sizing contract, so `len(get_state())`, `len(get_obs())`, and mask lengths must match what it advertises) and **declared-lossiness honesty** (`global_state.source` and `action_mask.source` are compared against observed behavior, catching a spec that claims native state/masks when the channel actually delivers concatenated observations and all-legal padding).
+
+The parallel verifier adds multi-agent-only checks: per-agent space match, reset/step dict keys equal the active agent set, monotonic agent-set shrink (no resurrection), action masks present at the declared location, and reset restoring `possible_agents`. Both emit the same `verification_report.json` shape.
 
 ### 3. Self-Test The Verifier When It Changed
 

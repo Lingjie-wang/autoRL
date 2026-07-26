@@ -2,6 +2,9 @@
 .agents/
 .codex/
 
+# Reference clones of upstream frameworks (read-only source study, not our code)
+third_party/
+
 # Runtime outputs
 runs/
 outputs/
@@ -40,3 +43,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Claude Code session artifacts
+.claude/
