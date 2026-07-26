@@ -83,6 +83,31 @@ Append new entries as integrations discover them. Each entry: symptom, cause, ru
 - Rule: declare `deterministic_under_seed: false` with the reason in the spec
   rather than faking reproducibility. Evaluate over many episodes.
 
+## EPyMARL: MPE Keys Unregistered After PettingZoo 1.25
+
+- Symptom: the documented `env_args.key="pz-mpe-simple-spread-v3"` fails with
+  `gymnasium.error.NameNotFound`, often suggesting an unrelated `vmas-*` key.
+- Cause: `src/envs/pz_wrapper.py` builds `pz-*` registrations by globbing the
+  installed `pettingzoo` package and imports via
+  `pettingzoo.{family}.{env}`. PettingZoo 1.25 moved MPE into the standalone
+  `mpe2` package, so no MPE key is ever registered.
+- Rule: register `pz-mpe-*` keys from `mpe2` separately and parameterize the
+  wrapper's module prefix. Note `mpe2` keeps env modules flat at the package
+  root (`mpe2.simple_spread_v3`), so there is no family subpackage segment.
+  Worked patch: `third_party/epymarl-run/src/envs/pz_wrapper.py`; see
+  `runs/20260726-marl5-setup/training_smoke_report.md`.
+
+## EPyMARL: smaclite Is A Hard Import For Every Environment
+
+- Symptom: `ModuleNotFoundError: No module named 'smaclite'` when launching a
+  completely unrelated environment; later `OSError: Could not load
+  libspatialindex_c library`.
+- Cause: `src/envs/__init__.py` imports `smaclite_wrapper` at module scope, so
+  smaclite is mandatory regardless of the environment used. smaclite pulls
+  `rtree`, which needs the native `libspatialindex_c`.
+- Rule: install smaclite even for non-SMAClite runs, and satisfy the native
+  library with `conda install -c conda-forge libspatialindex` (no sudo).
+
 ## Multi-Agent: Forgetting To Drop Done Agents
 
 - Symptom: episodes never end; `episode_terminates` verification fails after
