@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoRL Environment Verifier"
+  short_description: "Independently verify RL environment contracts"
+  default_prompt: "Use $autorl-verify-environment to verify an environment adapter and its declared runtime behavior without modifying it."

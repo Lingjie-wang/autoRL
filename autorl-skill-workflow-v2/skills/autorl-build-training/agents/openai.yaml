@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoRL Training Builder"
+  short_description: "Build checkpointable and observable RL training code"
+  default_prompt: "Use $autorl-build-training to implement a bounded, checkpointable, observable RL training and evaluation path from accepted contracts."

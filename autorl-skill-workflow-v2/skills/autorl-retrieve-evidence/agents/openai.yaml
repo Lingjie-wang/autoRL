@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoRL Evidence Retriever"
+  short_description: "Retrieve task-grounded RL paper and code evidence"
+  default_prompt: "Use $autorl-retrieve-evidence to collect task-grounded paper, baseline, and code evidence for a clarified RL workflow."

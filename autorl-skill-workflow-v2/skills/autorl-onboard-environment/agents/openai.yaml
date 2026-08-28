@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoRL Environment Onboarder"
+  short_description: "Turn RL environments into verified usage contracts"
+  default_prompt: "Use $autorl-onboard-environment to integrate an RL environment and produce its machine-readable contract and usage guide."

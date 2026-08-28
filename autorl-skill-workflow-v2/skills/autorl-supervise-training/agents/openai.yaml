@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoRL Training Supervisor"
+  short_description: "Propose guarded controls from RL training telemetry"
+  default_prompt: "Use $autorl-supervise-training to inspect one telemetry snapshot and propose a bounded training control action without applying it."

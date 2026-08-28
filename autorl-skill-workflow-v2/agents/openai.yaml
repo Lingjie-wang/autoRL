@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoRL Skill Workflow V2"
+  short_description: "Orchestrate guarded AutoRL experiment workflows"
+  default_prompt: "Use $autorl-skill-workflow-v2 to build or run a guarded RL workflow from environment intake through evaluation."
