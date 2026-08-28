@@ -8,6 +8,7 @@ Each check names the accident it catches. Tiers are cumulative.
 | --- | --- |
 | deliverables_exist | integration handed off with missing files |
 | spec_parses / spec_required_fields | malformed or incomplete spec that downstream tooling would choke on |
+| spec_descriptor_fields | missing single-agent modality/action-type/channel fields (`observation_modality`, `action_type`, `goal_conditioned`, `randomness_sources`, `observed_reward_bounds`, `training_channel`); only applied when `api_convention == "gymnasium"` |
 | config_parses | unparseable construction config |
 
 ## dry_run Tier
@@ -19,12 +20,12 @@ Each check names the accident it catches. Tiers are cumulative.
 | observation_space_matches_declared | spec drift: adapter changed after spec extraction |
 | action_space_matches_declared | same, on the action side |
 | reset_contract | reset not returning (obs-in-space, info dict) |
-| step_contract | wrong tuple arity (legacy Gym), obs escaping declared space, NaN/non-finite rewards, non-bool flags |
-| episode_terminates | episodes that never end (missing terminated/truncated wiring) |
+| step_contract | wrong tuple arity (legacy Gym), obs escaping declared space, NaN/non-finite rewards, non-bool flags; **reward type**: accepts any `numbers.Real` — `np.float32` (FetchReach) and plain `int` (MiniGrid) both pass, only Python `float` would fail under the old `isinstance(r, (int, float))` test |
+| episode_terminates | episodes that never end (missing terminated/truncated wiring); loop uses `min(declared_limit, STEP_CAP=30000)` — environments that report `spec.max_episode_steps=None` (ALE, MiniGrid) truncate internally and hitting the cap is a distinct failure outcome |
 | seed_determinism | unseeded randomness sources — silent unreproducibility |
 | close_safe | unsafe close/double-close; early warning for resource leaks |
 
-Seed determinism method: two rollouts with identical seed and identically-seeded action sampling must produce byte-identical trajectories (observations, rewards, flags). Skip with a recorded reason when the spec declares `deterministic_under_seed: false`.
+Seed determinism method: two rollouts with identical seed and identically-seeded action sampling must produce **byte-identical trajectories** (observations, rewards, flags). Observations are hashed via `canonical_bytes()`: dicts are key-sorted, ndarrays use `.tobytes()` + shape + dtype, scalars/strings use `repr`. This prevents the false-pass that `repr()` on a large array causes (numpy abbreviates large arrays; two divergent trajectories can share a repr). Skip with a recorded reason when the spec declares `deterministic_under_seed: false`.
 
 ## runtime_allowed Tier
 
@@ -79,6 +80,27 @@ Run by `verify_epymarl_env_template.py`; dispatched when `api_convention == "epy
 | close_safe | unreaped simulator child processes; unsafe double close |
 
 The two `*_source_honest` checks are the reason this tier exists: EPyMARL's generic wrappers degrade masks and centralized state **silently**, so a spec that overclaims must be caught mechanically.
+
+## Notes On The runtime_allowed Tier (single-agent)
+
+Implemented in `verify_env_template.py`; run with `--boundary runtime_allowed`.
+
+- `multi_episode_nan_sweep` walks 5 full episodes, checking obs leaves (including
+  every value of a `Dict` observation) and rewards for NaN/Inf.
+- `reward_bounds_observed` treats `observed_reward_bounds` as a measured **floor**,
+  not a range. Extraction and verification sample *different action streams*, so
+  the verifier legitimately sees wider values — MiniGrid's goal reward appears
+  only in streams that reach the goal. The check therefore fails on (a) a spec
+  claiming bounds **wider** than anything measured, i.e. invented rather than
+  extracted, and (b) violation of a non-null hard `reward_range`.
+- `construct_close_leak_cycle` runs 10 construct/reset/close cycles.
+
+Proven on the 5 single-agent envs of `runs/20260726-sa5-*` (2026-07-26):
+15/15 each at `runtime_allowed`. Destructively self-tested — falsifying a
+declared obs shape, inventing reward bounds, and dropping a descriptor field each
+produce the matching failed check and exit 1. The canonical-hash fix was proven
+directly: two 2000-element arrays differing at index 900 share an identical
+`repr()` but differ under `canonical_bytes()`.
 
 Proven on 4 runs (2026-07-26): `marl5-smacv1` 18/18, `marl5-smacv2` 17 passed + 1 honest skip, `marl5-mpe` 18/18, `marl5-vmas` 18/18. Self-tested by falsely declaring native masks + native state on MPE — both honesty checks failed as designed.
 

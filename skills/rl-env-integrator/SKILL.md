@@ -60,14 +60,32 @@ Write intended commands into `runs/<task-id>/dependency_plan.md` and wait for ap
 
 Produce under `runs/<task-id>/artifacts/integration/`:
 
-- `adapter.py`: expose `make_env(config)` as the single construction entrypoint. Every downstream consumer (spec extraction, smoke, verification, training) must construct through it.
-- `env_config.json`: env id, construction kwargs, default seed, pinned dependencies, Python version.
-- `extract_spec.py`: builds the env through the adapter and writes `env_spec.json` from live object attributes. Never hand-write spec fields from documentation.
+- `adapter.py`: expose `make_env(config)` as the single construction entrypoint. Every downstream consumer (spec extraction, smoke, verification, training) must construct through it. For environments that require `gym.register_envs(pkg)` before `gym.make` (ale-py, minigrid, gymnasium-robotics), call it **lazily inside `make_env`** behind a module-level flag — never at import time, so several adapters stay importable in one process.
+- `env_config.json`: env id, construction kwargs, default seed, pinned dependencies, Python version. Add `episode_step_cap` when `spec.max_episode_steps` is `None` (ALE, MiniGrid) so `extract_spec.py` has a loop bound.
+- `extract_spec.py`: builds the env through the adapter and writes `env_spec.json` from live object attributes. Never hand-write spec fields from documentation. **Start from [extract_spec_template.py](references/extract_spec_template.py)** — it contains all required fields with fill-in annotations.
 - `smoke_rollout.py`: random-policy episodes checking declared-space containment, finite rewards, bool termination flags, and that episodes end. No performance claims.
+
+#### Required spec fields
+
+The verifier checks ALL of these. Missing any one causes `spec_descriptor_fields` to fail at `generate_only` tier — before the environment is even constructed.
+
+Core fields (same as before):
+`env_id`, `source_type`, `api_convention`, `observation_space`, `action_space`, `episode_termination`, `deterministic_under_seed`, `dependencies`
+
+Single-agent descriptor fields (new since 2026-07-26):
+`observation_modality`, `action_type`, `goal_conditioned`, `randomness_sources`, `observed_reward_bounds`, `training_channel`
+
+`lossy_notes` is not required by the verifier but is expected in the spec to be honest about what a trainer receives vs what the raw env provides.
+
+#### Episode-length bound
+
+`env.spec.max_episode_steps` is `None` for environments that truncate internally (ALE via frame limit, MiniGrid via `env.unwrapped.max_steps`). `extract_spec.py` must carry its own loop bound — read `env.unwrapped.max_steps` or derive from ALE kwargs; never loop unboundedly. The `smoke_rollout.py` must do the same.
 
 ### 4. Extract The Spec And Run The Smoke Test
 
 Allowed only under `dry_run` or `runtime_allowed`. Under `generate_only`, emit the scripts and report the spec/smoke steps as pending.
+
+Default to `runtime_allowed` — it adds multi-episode NaN sweeps, reward-bound consistency, and 10× construct/close cycles for only a few minutes of cost. Only drop to `dry_run` when the environment is behind an external process with a long startup time (e.g. StarCraft II).
 
 Run `extract_spec.py`, then `smoke_rollout.py`. If the smoke fails, capture command, error, likely cause, and smallest next fix; do not proceed to handoff with silent failures.
 

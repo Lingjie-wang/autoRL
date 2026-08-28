@@ -36,6 +36,12 @@ Match checks to `execution_boundary`:
 - `dry_run`: everything above, plus construction and behavioral checks.
 - `runtime_allowed`: everything above, plus multi-episode NaN/Inf sweeps and repeated construct/close leak cycles.
 
+Any loop that waits for an episode to end must carry an explicit step cap.
+`env.spec.max_episode_steps` is `None` whenever truncation is internal to the
+environment (ALE's frame limit, MiniGrid's `env.unwrapped.max_steps`), so it
+cannot supply the bound. Hitting the cap is recorded as its own outcome, never
+silently treated as "still running".
+
 ### 2. Run The Check Catalog
 
 Read [check-catalog.md](references/check-catalog.md) for the full catalog, what accident each check catches, and multi-agent/external-simulator extensions.
@@ -45,8 +51,21 @@ Dispatch on `env_spec.json`'s `api_convention`:
 - `gymnasium` (single-agent) → [verify_env_template.py](references/verify_env_template.py)
 
   ```bash
-  python verify_env_template.py --run-dir runs/<task-id> --boundary dry_run
+  python verify_env_template.py --run-dir runs/<task-id> --boundary runtime_allowed
   ```
+
+  This is the only template implementing all three tiers, including
+  `runtime_allowed` (multi-episode NaN sweep, reward-bound consistency, 10×
+  construct/close cycles). It also enforces the single-agent descriptor fields
+  (`observation_modality`, `action_type`, `goal_conditioned`,
+  `randomness_sources`, `observed_reward_bounds`, `training_channel`).
+
+  Three properties of this verifier exist because naive versions silently
+  passed: observations are fingerprinted with a recursive `canonical_bytes()`
+  rather than `repr()` (numpy abbreviates large arrays, so `repr` equality can
+  match divergent trajectories); space reprs are compared with memory addresses
+  normalized out (MiniGrid's `MissionSpace` embeds one); and rewards are
+  type-checked as `numbers.Real` (`np.float32` is not a Python `float`).
 
 - `pettingzoo_parallel` (multi-agent, simultaneous) → [verify_parallel_env_template.py](references/verify_parallel_env_template.py)
 

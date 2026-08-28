@@ -7,6 +7,21 @@ Environment already ships a Gymnasium-compatible interface (Gymnasium classic co
 - Adapter is an identity shim: `make_env(config)` wraps `gym.make(config["env_id"], **config["make_kwargs"])`.
 - The shim still matters: it is the single construction entrypoint that keeps spec extraction, smoke, verification, and training building the exact same object.
 - Work concentrates in config pinning, spec extraction, and verification.
+- **Lazy registration**: `ale-py`, `minigrid`, and `gymnasium-robotics` only
+  register their env ids when `gymnasium.register_envs(<pkg>)` runs. Call it
+  inside `make_env` behind a module-level flag, never at import time, so several
+  adapters stay importable in one process.
+- Fill the single-agent descriptor fields (`observation_modality`, `action_type`,
+  `goal_conditioned`, `randomness_sources`, `observed_reward_bounds`,
+  `training_channel`, `lossy_notes`) from the live env plus the wrapper source.
+  A space `repr` alone does not tell a consumer whether it faces 17 float64
+  features or a 210×160×3 frame.
+- Measure `observed_reward_bounds` over **at least as many full episodes as the
+  verifier sweeps** (currently 5), and treat the result as a floor, not a range.
+
+Worked examples: `runs/20260726-sa5-{lunarlander,halfcheetah,pong,minigrid,fetchreach}/`.
+Overview with modalities, channels, and losses:
+`references/single-agent-environment-catalog.md`.
 
 ## custom_env
 

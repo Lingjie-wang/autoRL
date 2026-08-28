@@ -61,15 +61,58 @@ runs/<task-id>/verification_report.json
 
 Space fields must be extracted from the constructed environment, not hand-written from documentation.
 
+### Single-Agent Descriptor Fields
+
+A space `repr` alone does not tell a downstream consumer whether it is looking
+at 17 float64 features or a 210x160x3 uint8 frame, nor what a real trainer will
+actually receive. These fields are required for `api_convention: "gymnasium"`:
+
+```json
+{
+  "observation_modality": "vector | image | dict | hybrid",
+  "action_type": "discrete | continuous | multi_discrete | multi_binary",
+  "goal_conditioned": false,
+  "randomness_sources": ["initial state sampling", "sticky actions p=0.25"],
+  "observed_reward_bounds": [-1.0, 1.0],
+  "training_channel": "native | sb3_atari_wrapper | sb3_imgobs_wrapper | sb3_multiinput",
+  "lossy_notes": ["what the training channel drops relative to the raw env"]
+}
+```
+
+- `observation_modality`: `dict` when the observation space is a `Dict`;
+  `hybrid` when a `Dict` mixes image and vector leaves.
+- `randomness_sources`: every source that affects a trajectory, including ones
+  that survive seeding (ALE sticky actions are stochastic per step but
+  reproducible under a fixed seed — say so explicitly).
+- `observed_reward_bounds`: measured min/max over the extraction rollout.
+  `reward_range` left the core Gymnasium API in 1.x, so declared bounds are
+  usually absent; observed bounds are what the `reward_bounds_observed` check
+  compares against, and they are a floor on the true range, never a proof of it.
+- `training_channel` / `lossy_notes`: the single-agent analogue of the EPyMARL
+  channel-lossiness table below. Most trainers do not consume the raw env — SB3
+  needs `AtariWrapper` for pixels (grayscale, resize, frame-stack, reward clip)
+  and cannot consume MiniGrid's text `mission` at all. Record what the
+  trainer sees and what was dropped to get there.
+
 ## Verification Tiers
 
 Checks are gated by `execution_boundary`, following the pattern in `skills/rl-framework-implementer/references/smoke-tests.md`:
 
 - `generate_only`: deliverable files exist, `env_spec.json` parses and has all required fields, config parses.
 - `dry_run`: import adapter, construct env, verify declared spaces match `observation_space`/`action_space` at runtime, `reset` returns an observation contained in the declared space, take random steps and check every return value's type/shape/containment, verify episodes can terminate, verify seed determinism over two identical rollouts, verify `close()` is safe.
-- `runtime_allowed`: random-policy rollout over multiple full episodes checking for NaN/Inf in observations and rewards, reward magnitudes within `reward_range`, no resource leaks across repeated construct/close cycles.
+- `runtime_allowed`: random-policy rollout over multiple full episodes checking for NaN/Inf in observations and rewards, reward magnitudes within `observed_reward_bounds`, no resource leaks across repeated construct/close cycles.
 
 Verification proves the environment behaves as declared. It makes no claims about trainability or performance.
+
+### Episode-Length Bounds Must Be Explicit
+
+`env.spec.max_episode_steps` is `None` for environments that truncate
+internally (ALE via `max_num_frames_per_episode`, MiniGrid via
+`env.unwrapped.max_steps`). Any check that loops until an episode ends must
+carry its own hard step cap and record "hit the cap without ending" as a
+distinct outcome — never fall back to an effectively unbounded loop. The spec's
+`episode_termination` records both the mechanism and the effective step limit,
+whichever attribute it came from.
 
 ## Multi-Agent Environments (PettingZoo)
 
