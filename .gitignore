@@ -1,5 +1,7 @@
 # Local agent/session state
-.agents/
+.agents/*
+!.agents/skills/
+!.agents/skills/**
 .codex/
 
 # Reference clones of upstream frameworks (read-only source study, not our code)
