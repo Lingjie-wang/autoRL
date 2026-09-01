@@ -1,6 +1,6 @@
 ---
 name: rl-env-verifier
-description: Independently verify an RL environment integration against the adapter contract and emit a machine-readable verification report. Use after rl-env-integrator (or any hand-made integration) produced deliverables under runs/<task-id>/artifacts/integration/, before algorithm implementation or training is allowed to rely on the environment.
+description: Independently verify an RL environment integration against the adapter contract and emit a machine-readable verification report. Use after rl-env-integrator or a hand-made integration produces deliverables in an AutoRL run directory, before algorithm implementation or training is allowed to rely on the environment.
 ---
 
 # RL Environment Verifier
@@ -23,6 +23,10 @@ Minimum viable inputs:
 
 - run directory `runs/<task-id>/` containing `artifacts/integration/` deliverables
 - `execution_boundary` for this verification pass
+
+When `environment_reuse.json` exists, `artifacts/integration` may link to a
+verified source run. Read through the link, keep its target immutable, and
+write the current verification report in the current run.
 
 Stop if deliverables are missing (report that as a `generate_only` failure, do not improvise), or if the boundary forbids the checks the task card demands.
 
@@ -87,6 +91,9 @@ The parallel verifier adds multi-agent-only checks: per-agent space match, reset
 
 If the verifier script or check catalog was modified for this task, prove it still catches failures before trusting a green run: sabotage one spec field (e.g. flip a declared shape), confirm the corresponding check fails with exit code 1, then regenerate the spec via `extract_spec.py` and re-verify. A verifier that cannot fail is decoration, not verification.
 
+For a reused integration, perform sabotage/self-testing only on an isolated
+temporary copy. Never edit or regenerate files through the reuse link.
+
 ### 4. Report And Gate
 
 `verification_report.json` follows [report-schema.md](references/report-schema.md): overall status, per-check records with expected/observed/smallest_fix, and `performance_claims: none`.
@@ -105,6 +112,7 @@ On failure, hand back to `skills/rl-env-integrator/` with the failed records; do
 - Do not round partial verification up to `passed`.
 - Do not verify a hand-edited `env_spec.json`; if the spec was touched manually, require regeneration via `extract_spec.py` first.
 - Do not construct the environment around the adapter.
+- Do not modify a source run referenced by `environment_reuse.json`.
 - Do not claim the environment is trainable because verification passed.
 - Do not silently downgrade the tier (e.g. skip determinism because it is slow) without a `skipped` record.
 

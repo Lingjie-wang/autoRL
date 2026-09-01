@@ -1,4 +1,4 @@
 interface:
   display_name: "RL Environment Integrator"
-  short_description: "Wire an RL environment behind the standard adapter contract"
-  default_prompt: "Use $rl-env-integrator to integrate the environment from my clarified AutoRL task card and produce adapter, config, extracted spec, and smoke artifacts."
+  short_description: "Reuse or integrate an RL environment behind the adapter contract"
+  default_prompt: "Use $rl-env-integrator to reuse a compatible verified environment integration when possible, otherwise produce adapter, config, extracted spec, and smoke artifacts."

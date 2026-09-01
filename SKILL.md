@@ -24,6 +24,8 @@ Treat Codex or Claude Code as the executor. Do not recreate an executor inside t
    - evidence requirements
    - execution boundary: generate-only, dry-run, or allowed runtime execution
    - validation criteria
+   - environment reuse policy: `prefer_verified` for normal work or `disabled`
+     for clean-room workflow evaluation
 
 3. Use stage contracts instead of agent personas:
    - intake and clarification: use `skills/rl-task-clarifier/` when the RL task is vague or the executor would need to guess environment, metric, budget, or runtime permissions
@@ -32,7 +34,7 @@ Treat Codex or Claude Code as the executor. Do not recreate an executor inside t
    - mini workflow testing: use `skills/autorl-mini-orchestrator/` when explicitly testing main-thread clarification followed by retrieval subagent handoff
    - strategy decision
    - executor brief
-   - environment integration: use `skills/rl-env-integrator/` when a concrete environment must become constructible behind the adapter contract (`references/env-adapter-contract.md`) before algorithm work
+   - environment integration: use `skills/rl-env-integrator/` to reuse a compatible verified integration when available, or make a concrete environment constructible behind the adapter contract (`references/env-adapter-contract.md`) before algorithm work
    - implementation: use `skills/rl-framework-implementer/` when the task requires setting up an RL framework, adding algorithm/environment code, or running bounded implementation smoke tests
    - verification: use `skills/rl-env-verifier/` to independently verify environment integrations and emit `verification_report.json`
    - result package

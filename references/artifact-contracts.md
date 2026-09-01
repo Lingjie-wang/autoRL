@@ -20,6 +20,8 @@ run-or-task/
   dependency_plan.md
   smoke_test_report.md
   integration_report.md       # when an environment was integrated; see references/env-adapter-contract.md
+  reuse_search.json            # optional deterministic environment-reuse lookup
+  environment_reuse.json       # when a verified integration is reused
   install_log.md              # optional when installs/clones happen
   run_config.json             # optional implementation config
   verification_report.json
@@ -165,6 +167,20 @@ Required:
 - `evidence_ref_compliance`
 - `failures`
 - `next_action`
+
+## Environment Reuse Receipt
+
+Required when `artifacts/integration` references another run:
+
+- `mode: reused`
+- source run and source artifact root
+- environment id, source type, API convention, and training channel
+- hashes of the referenced integration artifacts
+- source and required verification boundaries
+- whether current-run re-verification is required
+
+The source run is immutable. Downstream stages use the current run's
+`artifacts/integration` path and must not edit through it.
 
 ## Result Package
 

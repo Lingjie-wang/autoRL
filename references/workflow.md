@@ -21,6 +21,8 @@ Required fields:
 - `execution_boundary`: `generate_only`, `dry_run`, or `runtime_allowed`
 - `missing_context`: concrete questions or blockers
 - `assumptions`: bounded assumptions allowed for planning
+- `environment_reuse`: `prefer_verified` for normal work or `disabled` for a
+  clean-room evaluation of the integration workflow
 
 Stop here if the request lacks task mode, environment objective, concrete RL task, algorithm direction, runtime boundary, or success criteria. Do not proceed to evidence retrieval or implementation while any blocking intake field is unresolved.
 
@@ -115,6 +117,13 @@ Use [executor-protocol.md](executor-protocol.md) for the brief format.
 Executor: Codex or Claude Code.
 
 Use `skills/rl-env-integrator/` first when the task card names a concrete environment that must become constructible behind the adapter contract (`references/env-adapter-contract.md`). It emits `integration_report.md` plus `artifacts/integration/` deliverables, which `skills/rl-env-verifier/` gates in Stage 6 before training-oriented implementation relies on the environment.
+
+Before creating an adapter, run the integrator's deterministic reuse gate. A
+compatible verified environment is referenced from the new run through
+`environment_reuse.json` and `artifacts/integration`; the source run remains
+read-only. Re-run verification in the new run only when the source verification
+tier is below the current boundary. With `environment_reuse: disabled`, do not
+inspect prior runs for implementation answers.
 
 Use `skills/rl-framework-implementer/` when implementation requires selecting or installing an RL framework, cloning a reference implementation, adding algorithm/environment wiring, or running bounded smoke tests.
 

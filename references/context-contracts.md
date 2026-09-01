@@ -68,6 +68,8 @@ Use these keys when available:
 - `runtime_contract_digest`
 - `environment_adaptation_packet`
 - `environment_interface_contract`
+- `environment_reuse_policy`
+- `environment_reuse_ref`
 - `context_preflight`
 - `evidence_source_context`
 - `implementation_evidence_bridge`

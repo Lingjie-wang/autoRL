@@ -75,6 +75,8 @@ Extract candidate values for:
 - execution boundary
 - artifact expectations
 - user approval requirements
+- environment reuse policy when the request is a clean-room workflow test or
+  explicitly requires or forbids prior integrations
 
 Read [clarification-schema.md](references/clarification-schema.md) before scoring ambiguity or writing the final task card.
 
@@ -202,6 +204,7 @@ Use this structure:
 - compute:
 - budget:
 - dependency_policy:
+- environment_reuse: prefer_verified | disabled
 
 ## Expected Artifacts
 - ...

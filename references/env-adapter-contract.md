@@ -42,6 +42,25 @@ Plus, produced by the verification skill:
 runs/<task-id>/verification_report.json
 ```
 
+## Reusing A Verified Integration
+
+Normal tasks should prefer an existing compatible integration before creating
+another one. Clean-room evaluations must disable reuse.
+
+Reuse is allowed only when a deterministic gate confirms:
+
+- environment id and source type match
+- requested API convention, training channel, and construction constraints match
+- custom source files are byte-identical when source paths are available
+- all required integration artifacts exist
+- `verification_report.json` passed and is not older than the artifacts
+
+Create a new run containing `environment_reuse.json` and a relative link at
+`artifacts/integration` to the source run. Keep the source run read-only. If its
+verification tier is below the current boundary, run verification through the
+new run's link and write the new report in the new run; do not rebuild the
+adapter.
+
 ## env_spec.json Schema
 
 ```json

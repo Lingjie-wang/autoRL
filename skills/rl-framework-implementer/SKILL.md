@@ -45,6 +45,10 @@ Read the task card, evidence report, decision packet, and executor brief when pr
 - test commands and project conventions
 - installed frameworks that can avoid new downloads
 
+If `environment_reuse.json` exists, use the current run's
+`artifacts/integration` path as the accepted environment interface. Read the
+receipt for provenance and never modify the referenced source integration.
+
 Prefer existing project patterns over introducing a new framework.
 
 ### 2. Choose The Framework Path

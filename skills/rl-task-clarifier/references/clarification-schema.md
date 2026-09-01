@@ -56,6 +56,7 @@ Use these only when they do not change cost, safety, or evaluation validity:
 | `domain` | `reinforcement_learning` | low |
 | `artifact_expectations` | training config, script, telemetry, summary report | low |
 | `approval_gates` | ask before dependency install, long training, remote spend | low |
+| `environment_reuse` | `prefer_verified`; use `disabled` for clean-room workflow tests | low |
 | `baseline_or_comparator` | simple canonical baseline for the environment family | medium |
 | `runtime_constraints.budget` | smoke run only | medium |
 

@@ -6,10 +6,17 @@ Write to `runs/<task-id>/integration_report.md`:
 # Integration Report: <env_id>
 
 ## Status
-- integration_status: complete | partial | blocked
+- integration_status: complete | reused | partial | blocked
 - route: official_benchmark | custom_env | external_simulator
 - api_convention: gymnasium | pettingzoo_parallel | pettingzoo_aec | epymarl_multiagentenv
 - execution_boundary_used: runtime_allowed | dry_run | generate_only
+
+## Reuse
+- reuse_policy: prefer_verified | disabled
+- reuse_status: reused | not_found | disabled
+- source_run: runs/<source-run> | none
+- source_verification: <path and boundary> | none
+- verification_required: true | false
 
 ## Environment
 - env_id:
@@ -66,6 +73,8 @@ Run rl-env-verifier at `runtime_allowed` and emit verification_report.json.
 
 Rules:
 
+- For `integration_status: reused`, point the deliverable table at the linked
+  artifact path and record the source run; do not copy its report text.
 - `pending` is honest under `generate_only`; never report `passed` for checks that did not run.
 - The gotchas section is mandatory even when empty (`- none`); it feeds known-pitfalls.md.
 - "Measured Properties" and "Channel Lossiness" replace a blank spec dump — a reader should be able to understand the environment from the report without opening env_spec.json.

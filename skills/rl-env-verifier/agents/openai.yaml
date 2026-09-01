@@ -1,4 +1,4 @@
 interface:
   display_name: "RL Environment Verifier"
   short_description: "Independently verify an environment integration against the adapter contract"
-  default_prompt: "Use $rl-env-verifier to verify the integration under runs/<task-id>/ and emit verification_report.json before any training relies on the environment."
+  default_prompt: "Use $rl-env-verifier to verify the integration in the requested AutoRL run directory and emit verification_report.json before any training relies on the environment."

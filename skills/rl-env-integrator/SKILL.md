@@ -1,6 +1,6 @@
 ---
 name: rl-env-integrator
-description: Integrate an RL environment behind the standard adapter contract and produce verifiable integration deliverables. Use after task clarification when a task card names a concrete environment (official benchmark, custom env code, or external simulator) that must become constructible, spec-documented, and smoke-tested before algorithm implementation or training.
+description: Reuse a compatible verified RL environment integration when available, or integrate the environment behind the standard adapter contract and produce verifiable deliverables. Use after task clarification when a concrete official benchmark, custom environment, or external simulator must become constructible, spec-documented, and smoke-tested before algorithm implementation or training.
 ---
 
 # RL Environment Integrator
@@ -10,6 +10,9 @@ description: Integrate an RL environment behind the standard adapter contract an
 Make one concrete RL environment constructible through the standard adapter interface and emit the deliverables defined in [references/env-adapter-contract.md](../../references/env-adapter-contract.md): adapter, config, extracted spec, smoke script, and integration report.
 
 This skill owns environment wiring only. It must not choose algorithms, write training loops, claim performance, or hand-write environment specs. Verification of the integration belongs to `skills/rl-env-verifier/`.
+
+Normal use defaults to `environment_reuse: prefer_verified`. Clean-room workflow
+tests must set `environment_reuse: disabled` so prior runs cannot answer the task.
 
 ## Inputs
 
@@ -36,11 +39,61 @@ blocking checklist item is missing from both, ask — do not guess.
 
 Both forms need a target run directory `runs/<task-id>/`.
 
+Optional reuse input:
+
+- `environment_reuse`: `prefer_verified` (default) or `disabled`
+- required API convention, training channel, and verification boundary
+- construction config constraints when they affect environment semantics
+- source files for custom environments, so reuse requires byte-identical code
+
 Stop if the environment id/path is ambiguous, the source type is unknown, or dependency permissions are unclear. Route back to `skills/rl-task-clarifier/` instead of guessing.
 
 ## Workflow
 
-### 1. Classify The Integration Route
+### 1. Run The Reuse Gate
+
+Before writing adapter code, run
+[`scripts/find_reusable_integration.py`](scripts/find_reusable_integration.py).
+Do not search runs manually or reuse on environment name alone.
+
+Example for a custom environment:
+
+```bash
+python skills/rl-env-integrator/scripts/find_reusable_integration.py find \
+  --runs-dir runs \
+  --env-id ThermalChamber-v0 \
+  --source-type custom_env \
+  --api-convention gymnasium \
+  --source-file incoming/thermal-chamber/env_code.py \
+  --required-boundary dry_run \
+  --output runs/<task-id>/reuse_search.json
+```
+
+The finder requires complete artifacts, a passing non-stale verification
+report, matching metadata/config constraints, and matching source hashes when
+provided. It returns `reusable`, `reusable_needs_verification`, `not_found`, or
+`disabled`.
+
+When reusable, link the verified integration into the new run without copying
+or modifying the source run:
+
+```bash
+python skills/rl-env-integrator/scripts/find_reusable_integration.py link \
+  --source-run runs/<source-run> \
+  --target-run runs/<task-id> \
+  --required-boundary dry_run
+```
+
+This creates `environment_reuse.json` and an
+`artifacts/integration` symlink. Write the current run's
+`integration_report.md` with `integration_status: reused` and the source run.
+If `verification_required` is false, reuse the named source verification and
+skip Steps 2-5. If true, keep the linked artifacts read-only and hand the new
+run to `rl-env-verifier`; do not rebuild the adapter.
+
+When status is `not_found` or reuse is disabled, continue below.
+
+### 2. Classify The Integration Route
 
 Read [adapter-routes.md](references/adapter-routes.md). Map `environment_spec.type` to a route:
 
@@ -50,13 +103,13 @@ Read [adapter-routes.md](references/adapter-routes.md). Map `environment_spec.ty
 
 Multi-agent environments follow PettingZoo conventions; record which in `env_spec.json`.
 
-### 2. Inspect The Runtime, Then Gate Dependencies
+### 3. Inspect The Runtime, Then Gate Dependencies
 
 Check what already exists before proposing any install: Python version, package manager, existing envs/venvs, already-installed frameworks.
 
 Write intended commands into `runs/<task-id>/dependency_plan.md` and wait for approval before running any install. Read [known-pitfalls.md](references/known-pitfalls.md) first — Python version choice and library version pins are the top failure source. Default to an isolated environment (conda env or venv) and pin Python 3.10/3.11 for RL-ecosystem wheel compatibility unless the task card says otherwise.
 
-### 3. Implement The Deliverables
+### 4. Implement The Deliverables
 
 Produce under `runs/<task-id>/artifacts/integration/`:
 
@@ -81,7 +134,7 @@ Single-agent descriptor fields (new since 2026-07-26):
 
 `env.spec.max_episode_steps` is `None` for environments that truncate internally (ALE via frame limit, MiniGrid via `env.unwrapped.max_steps`). `extract_spec.py` must carry its own loop bound — read `env.unwrapped.max_steps` or derive from ALE kwargs; never loop unboundedly. The `smoke_rollout.py` must do the same.
 
-### 4. Extract The Spec And Run The Smoke Test
+### 5. Extract The Spec And Run The Smoke Test
 
 Allowed only under `dry_run` or `runtime_allowed`. Under `generate_only`, emit the scripts and report the spec/smoke steps as pending.
 
@@ -89,7 +142,7 @@ Default to `runtime_allowed` — it adds multi-episode NaN sweeps, reward-bound 
 
 Run `extract_spec.py`, then `smoke_rollout.py`. If the smoke fails, capture command, error, likely cause, and smallest next fix; do not proceed to handoff with silent failures.
 
-### 5. Write The Integration Report And Hand Off
+### 6. Write The Integration Report And Hand Off
 
 Write `runs/<task-id>/integration_report.md` using [integration-report-template.md](references/integration-report-template.md): status, route, runtime pins, deliverable table, smoke result, gotchas discovered, next action.
 
@@ -98,6 +151,8 @@ Hand off to `skills/rl-env-verifier/` for independent verification. Integration 
 ## Output Rules
 
 - All deliverables under `runs/<task-id>/artifacts/integration/`, report at `runs/<task-id>/integration_report.md`.
+- A reused run instead contains `environment_reuse.json` plus a link at the
+  same artifact path; downstream consumers use that path unchanged.
 - Pin exact library versions and Python version in `env_config.json`.
 - Record every discovered quirk (API differences, doc-vs-runtime mismatches) in the report's gotchas section — these feed back into [known-pitfalls.md](references/known-pitfalls.md).
 - Keep adapter code free of algorithm or training logic.
@@ -105,6 +160,8 @@ Hand off to `skills/rl-env-verifier/` for independent verification. Integration 
 ## Anti-Patterns
 
 - Do not hand-write `env_spec.json` from documentation; docs and runtime disagree (e.g. CartPole doc thresholds vs runtime `inf` velocity bounds).
+- Do not reuse on `env_id` alone or copy old artifacts into a new run. Use the
+  deterministic reuse gate and keep the source run read-only.
 - Do not run `pip install`/`conda create` before the dependency plan is approved.
 - Do not let scripts construct the environment around the adapter (`gym.make` inline) — construction drift makes verification meaningless.
 - Do not treat a passing smoke rollout as verification; the independent verifier still runs.
